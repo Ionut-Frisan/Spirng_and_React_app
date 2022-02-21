@@ -30,7 +30,7 @@ export default class Transaction extends Component {
 	}
 
 	componentDidMount() {
-		this.fetchTransactions();
+		this.setTransactions();
 		this.fetchCards();
 		this.fetchMeds();
 	}
@@ -59,21 +59,40 @@ export default class Transaction extends Component {
 				arrCopy.push(med);
 			}
 		});
-		this.setState({
-			items: arrCopy,
-		});
+		this.setState(
+			{
+				items: arrCopy,
+			},
+			() => {
+				window.localStorage.setItem(
+					"transactions",
+					JSON.stringify(this.state.items)
+				);
+			}
+		);
 	}
 
-	addToDom(med, card, noOfPieces, date, time) {
-		let cards = JSON.parse(window.localStorage.getItem("cards"));
-		let cd = cards.filter((cd) => cd.id === card)[0];
+	removeFromDomByInterval(fromDate, toDate) {
+		let fDate = new Date(fromDate).getTime();
+		let tDate = new Date(toDate).getTime();
 
-		let meds = JSON.parse(window.localStorage.getItem("meds"));
-		let md = meds.filter((md) => md.id === med)[0];
+		let arrCopy = this.state.items;
+		arrCopy = arrCopy.filter((transaction) => {
+			let trDate = new Date(transaction.date).getTime();
+			console.log(trDate < fDate || trDate > tDate);
+			return trDate < fDate || trDate > tDate;
+		});
+
+		window.localStorage.setItem("transactions", JSON.parse(arrCopy));
+	}
+
+	addToDom(id, med, card, noOfPieces, date, time) {
+		let cd = this.getCardByID(card);
+		let md = this.getMedById(med);
 
 		let arrCopy = this.state.items;
 		arrCopy.push({
-			id: 0,
+			id: id,
 			medicament: md,
 			card: cd,
 			noOfPieces: noOfPieces,
@@ -84,28 +103,67 @@ export default class Transaction extends Component {
 			{
 				items: arrCopy,
 			},
-			console.log(this.state)
+			() => {
+				window.localStorage.setItem(
+					"transactions",
+					JSON.stringify(this.state.items)
+				);
+			}
 		);
+	}
+
+	getCardByID(id) {
+		let cards = JSON.parse(window.localStorage.getItem("cards"));
+		let card = cards.filter((cd) => cd.id === id)[0];
+		return card;
+	}
+
+	getMedById(id) {
+		let meds = JSON.parse(window.localStorage.getItem("meds"));
+		let med = meds.filter((md) => md.id === id)[0];
+		return med;
 	}
 
 	updateDom(id, id_med, id_card, noOfPieces, date, time) {
 		let arrCopy = this.state.items;
+
+		let card = this.getCardByID(id_card);
+		let med = this.getMedById(id_med);
+
 		arrCopy.forEach((tr) => {
 			if (tr.id === id) {
-				tr.medicament = id_med;
-				tr.card = id_card;
+				tr.medicament = med;
+				tr.card = card;
 				tr.noOfPieces = noOfPieces;
 				tr.date = date;
 				tr.time = time;
 			}
 		});
-		this.setState({
-			items: arrCopy,
-		});
+		this.setState(
+			{
+				items: arrCopy,
+			},
+			() => {
+				window.localStorage.setItem(
+					"transactions",
+					JSON.stringify(this.state.items)
+				);
+			}
+		);
 	}
 
+	setTransactions = () => {
+		let transactions = JSON.parse(window.localStorage.getItem("transactions"));
+		if (transactions !== null) {
+			this.setState({
+				items: transactions,
+			});
+		} else {
+			this.fetchTransactions();
+		}
+	};
+
 	handleAdd = (med, card, noOfPieces, date, time) => {
-		console.log(med, card, noOfPieces, date, time);
 		fetch("http://127.0.0.1:8080/api/transactions/addTransaction", {
 			method: "POST",
 			body: JSON.stringify({
@@ -126,7 +184,10 @@ export default class Transaction extends Component {
 						"Transaction could not be added, please check your input and try again!"
 					);
 				} else {
-					this.addToDom(med, card, noOfPieces, date, time);
+					response.text().then((data) => {
+						this.addToDom(data, med, card, noOfPieces, date, time);
+					});
+
 					this.handleShowNotification(
 						"success",
 						"Transaction added successfully!"
@@ -149,8 +210,14 @@ export default class Transaction extends Component {
 					this.setState({
 						items: result,
 					});
+					window.localStorage.setItem("transactions", JSON.stringify(result));
 				},
-				(error) => {}
+				(error) => {
+					console.log(error);
+				}
+			)
+			.catch((err) =>
+				this.handleShowNotification("error", "Something went wrong")
 			);
 	};
 
@@ -169,6 +236,7 @@ export default class Transaction extends Component {
 	};
 
 	handleUpdate = (id, id_med, id_card, noOfPieces, date, time) => {
+		console.log(this.state.items);
 		fetch("http://127.0.0.1:8080/api/transactions/update", {
 			method: "PUT",
 			body: JSON.stringify({
@@ -259,7 +327,6 @@ export default class Transaction extends Component {
 	};
 
 	handleDeleteByInterval = async (fromDate, toDate) => {
-		console.log(fromDate, toDate);
 		let response = await fetch(
 			`http://127.0.0.1:8080/api/transactions/deleteByInterval/${fromDate}to${toDate}`,
 			{
@@ -276,9 +343,10 @@ export default class Transaction extends Component {
 					"Something went wrong, please try again!"
 				);
 			} else {
+				this.removeFromDomByInterval(fromDate, toDate);
 				this.handleShowNotification(
 					"success",
-					"Transactions were deleted successfully!"
+					`Transactions were deleted successfully!`
 				);
 			}
 		} catch (err) {
@@ -304,6 +372,7 @@ export default class Transaction extends Component {
 						onFilterByInterval={this.handleFilterByInterval}
 						onDeleteByInterval={this.handleDeleteByInterval}
 						onShowNotification={this.handleShowNotification}
+						onFilterReset={this.setTransactions}
 					/>
 					<TableContainer>
 						<Table stickyHeader={true} aria-label="sticky table">
@@ -346,14 +415,14 @@ export default class Transaction extends Component {
 										Date
 									</TableCell>
 									<TableCell
-										key="th7"
+										key="th6"
 										align="right"
 										style={{ minWidth: "100" }}
 									>
 										Time
 									</TableCell>
 									<TableCell
-										key="th8"
+										key="th7"
 										align="right"
 										style={{ minWidth: "100" }}
 									>

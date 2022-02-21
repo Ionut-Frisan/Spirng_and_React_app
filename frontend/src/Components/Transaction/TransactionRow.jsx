@@ -26,17 +26,20 @@ export default class TransactionRow extends Component {
 	}
 
 	componentDidMount() {
-		this.setState({
-			id: this.props.transaction.id,
-			medicament: this.props.transaction.medicament.id,
-			card:
-				this.props.transaction.card == null
-					? 0
-					: this.props.transaction.card.id,
-			noOfPieces: this.props.transaction.noOfPieces,
-			date: this.props.transaction.date,
-			time: this.props.transaction.time,
-		});
+		this.setState(
+			{
+				id: this.props.transaction.id,
+				medicament: this.props.transaction.medicament.id,
+				card:
+					this.props.transaction.card == null
+						? 0
+						: this.props.transaction.card.id,
+				noOfPieces: this.props.transaction.noOfPieces,
+				date: this.props.transaction.date,
+				time: this.props.transaction.time,
+			},
+			console.log(this.props.transaction)
+		);
 	}
 
 	handleChange = (event) => {
@@ -47,7 +50,6 @@ export default class TransactionRow extends Component {
 
 	validateInput(field) {
 		let valid = true;
-		console.log(this.state);
 		//validating number of pieces: has to be int > 0
 		if (field === "noOfPieces" || field === "all") {
 			if (this.state.noOfPieces === "") {
@@ -56,7 +58,8 @@ export default class TransactionRow extends Component {
 				});
 				valid = false;
 			} else if (
-				this.state.noOfPieces !== parseInt(this.state.noOfPieces).toString()
+				this.state.noOfPieces.toString() !==
+				parseInt(this.state.noOfPieces).toString()
 			) {
 				this.setState({
 					noOfPiecesError: "Should be an integer",
@@ -72,29 +75,7 @@ export default class TransactionRow extends Component {
 					noOfPiecesError: "",
 				});
 			}
-		}
-
-		//validating date: can't be in the future
-		if (field === "date" || field === "all") {
-			if (this.state.date === "") {
-				this.setState({
-					dateError: "Can't be empty",
-				});
-				valid = false;
-			} else {
-				var today = new Date();
-				var inputDate = new Date(this.state.date + "T00:00:01");
-
-				if (inputDate.getTime() > today.getTime()) {
-					this.setState({
-						dateError: "Can't be in the future",
-					});
-					valid = false;
-				} else
-					this.setState({
-						dateError: "",
-					});
-			}
+			console.log(this.state);
 		}
 
 		//validating time: can't be in the future
@@ -117,6 +98,28 @@ export default class TransactionRow extends Component {
 					} else
 						this.setState({
 							timeError: "",
+						});
+				}
+			}
+
+			//validating date: can't be in the future
+			if (field === "date" || field === "all") {
+				if (this.state.date === "") {
+					this.setState({
+						dateError: "Can't be empty",
+					});
+					valid = false;
+				} else {
+					var inputDate = new Date(this.state.date + "T00:00:01");
+
+					if (inputDate.getTime() > today.getTime()) {
+						this.setState({
+							dateError: "Can't be in the future",
+						});
+						valid = false;
+					} else
+						this.setState({
+							dateError: "",
 						});
 				}
 			}

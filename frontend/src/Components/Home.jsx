@@ -43,8 +43,8 @@ export default class Home extends Component {
 									Cards
 								</Typography>
 								<Typography variant="body2" color="white">
-									See the full list of transactions, add new entries, modify
-									existing ones, delete etc.
+									See the full list of cards, add new entries, modify existing
+									ones, delete etc.
 								</Typography>
 							</CardContent>
 						</MyLink>
@@ -65,8 +65,8 @@ export default class Home extends Component {
 									Meds
 								</Typography>
 								<Typography variant="body2" color="white">
-									See the full list of transactions, add new entries, modify
-									existing ones, delete etc.
+									See the full list of meds, add new entries, modify existing
+									ones, delete etc.
 								</Typography>
 							</CardContent>
 						</MyLink>
